@@ -1,0 +1,18 @@
+steps:
+  - name: gcr.io/cloud-builders/docker
+    args: ['build', '-t', 'gcr.io/$_GCP_PROJECT_ID/$_SERVICE_NAME:$_IMAGE_V', '.']
+  - name: gcr.io/cloud-builders/docker
+    args: ['push', 'gcr.io/$_GCP_PROJECT_ID/$_SERVICE_NAME:$_IMAGE_V']
+  - name: gcr.io/cloud-builders/gcloud
+    args: [
+      'run',
+      'deploy',
+      '$_SERVICE_NAME-$_IMAGE_V',
+      '--image',
+      'gcr.io/$_GCP_PROJECT_ID/$_SERVICE_NAME:$_IMAGE_V',
+      '--region', 'us-east1',
+      '--platform', 'managed',
+      '--port=$_PORT',
+      '--set-env-vars=STRIPE_SK_TEST_KEY=$_STRIPE_SK_TEST_KEY,CLIENT_SVC_ADDRESS=$_CLIENT_SVC_ADDRESS,CUSTOMER_API_SVC_ADDRESS=$_CUSTOMER_API_SVC_ADDRESS,RESTAURANT_SVC_ADDRESS=$_RESTAURANT_SVC_ADDRESS,MONGODB_CONNECTION_STRING=$_MONGODB_CONNECTION_STRING,MONGODB_DATABASE=$_MONGODB_DATABASE,AUTH0_ISSUER_BASE_URL=$_AUTH0_ISSUER_BASE_URL,AUTH0_AUDIENCE=$_AUTH0_AUDIENCE',
+      '--allow-unauthenticated',
+    ]

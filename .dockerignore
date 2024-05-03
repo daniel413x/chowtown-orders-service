@@ -1,0 +1,31 @@
+# Maven directories and files
+target/
+!.mvn/wrapper/maven-wrapper.jar
+mvnw
+mvnw.cmd
+*.log
+
+# IDE-specific files and directories
+.idea/
+*.iml
+*.ipr
+*.iws
+.vscode/
+.classpath
+.project
+.settings/
+
+# System files
+.DS_Store
+Thumbs.db
+
+# Other files and directories
+.dockerignore
+.git/
+.gitignore
+*.md
+LICENSE
+
+# Environment files
+.env.local
+.env.test

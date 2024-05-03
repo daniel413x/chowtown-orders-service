@@ -1,0 +1,102 @@
+stages:
+  - build
+  - unit_test
+  - push
+  - containerize_for_staging
+  - test_staged
+  - containerize_for_deployment
+  - test_deployed
+
+variables:
+  PROJECT_GROUP: chowtown-cms
+  SERVICE_NAME: orders
+  PRODUCTION_VERSION: "1.0.0"
+
+build app:
+  except:
+    - main
+    - staging
+  stage: build
+  image: maven:3-openjdk-17
+  script:
+    - mvn clean package -DskipTests
+    - mvn checkstyle:check
+
+unit test app:
+  except:
+    - main
+    - staging
+  stage: unit_test
+  image: maven:3-openjdk-17
+  script:
+    - mvn test
+
+.containerize:
+  image: google/cloud-sdk:alpine
+  before_script:
+    - cat $GCP_CLOUD_BUILD_SERVICE_KEY > /tmp/gcloud-service-key.json
+    - gcloud auth activate-service-account --key-file /tmp/gcloud-service-key.json
+    - gcloud config set project $GCP_PROJECT_ID
+    - gcloud builds submit . --config=cloudbuild.yml --substitutions _STRIPE_SK_TEST_KEY=$STRIPE_SK_TEST_KEY,_RESTAURANT_SVC_ADDRESS=$RESTAURANT_SVC_ADDRESS,_CUSTOMER_API_SVC_ADDRESS=$CUSTOMER_API_SVC_ADDRESS,_GCP_PROJECT_ID=$GCP_PROJECT_ID,_SERVICE_NAME=$SERVICE_NAME,_IMAGE_V=$IMAGE_V,_PORT=$PORT,_CLIENT_SVC_ADDRESS=$CLIENT_SVC_ADDRESS,_MONGODB_CONNECTION_STRING=$MONGODB_CONNECTION_STRING,_MONGODB_DATABASE=$MONGODB_DATABASE,_AUTH0_ISSUER_BASE_URL=$AUTH0_ISSUER_BASE_URL,_AUTH0_AUDIENCE=$AUTH0_AUDIENCE
+  after_script:
+    - rm /tmp/gcloud-service-key.json
+
+push to staging:
+  except:
+    - main
+    - staging
+  stage: push
+  script:
+    - git config user.email "$GITLAB_ACCOUNT_NAME@gmail.com"
+    - git config user.name "$GITLAB_ACCOUNT_NAME"
+    - git remote remove origin
+    - git remote add origin https://oauth2:$WRITE_TOKEN@gitlab.com/$GITLAB_ACCOUNT_NAME/$PROJECT_GROUP-$SERVICE_NAME.git
+    - git branch staging
+    - git push -f origin staging
+
+containerize for staging:
+  only:
+    - staging
+  stage: containerize_for_staging
+  variables:
+    IMAGE_V: "staging"
+  extends:
+    - .containerize
+  script:
+    - echo
+
+.cypress_tests:
+  image: cypress/base:20.5.0
+  script:
+    - git clone https://oauth2:$WRITE_TOKEN@gitlab.com/$GITLAB_ACCOUNT_NAME/$PROJECT_GROUP-tests.git cypress
+    - cd cypress
+    - npm install
+    - cat $CYPRESS_ENV_JSON > cypress.env.json
+    - npm run cypress:run
+  after_script:
+    - rm cypress.env.json
+
+test staging app:
+  only:
+    - staging
+  stage: test_staged
+  environment: staging
+  extends: .cypress_tests
+
+containerize for deploying:
+  only:
+    - main
+  stage: containerize_for_deployment
+  variables:
+    IMAGE_V: "production"
+  extends:
+    - .containerize
+  script:
+    - echo
+
+test deployed app:
+  only:
+    - main
+  stage: test_deployed
+  environment: production
+  extends: .cypress_tests
