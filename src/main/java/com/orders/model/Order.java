@@ -35,7 +35,7 @@ public class Order {
     private List<CartItem> cartItems;
 
     @Field("totalAmount")
-    private Integer totalAmount;
+    private Long totalAmount;
 
     @Field("Status")
     private Status status;

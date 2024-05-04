@@ -11,6 +11,9 @@ import com.orders.utils.BaseHandler;
 import com.orders.utils.ValidationHandler;
 import com.stripe.StripeClient;
 import com.stripe.exception.StripeException;
+import com.stripe.model.Event;
+import com.stripe.model.EventDataObjectDeserializer;
+import com.stripe.model.StripeObject;
 import com.stripe.model.checkout.Session;
 import com.stripe.net.RequestOptions;
 import com.stripe.param.checkout.SessionCreateParams;
@@ -31,6 +34,7 @@ import org.springframework.web.reactive.function.server.ServerResponse;
 import org.springframework.web.server.ResponseStatusException;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
+import com.stripe.net.Webhook;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -53,6 +57,45 @@ public class OrdersRoutesHandler extends BaseHandler {
     }
 
     public OrdersRoutesHandler() {
+    }
+
+    public Mono<ServerResponse> stripeCheckoutWebhook(ServerRequest req) {
+        return req.bodyToMono(String.class)
+                .flatMap(payload -> {
+                    String stripeSignature = req.headers().firstHeader("stripe-signature");
+                    Mono<Event> monoEvent = Mono.fromCallable(() -> {
+                        return Webhook.constructEvent(
+                                payload,
+                                stripeSignature,
+                                System.getenv("STRIPE_ENDPOINT_SECRET")
+                        );
+                    }).flatMap(Mono::just);
+                    return monoEvent
+                            .flatMap(event -> {
+                                EventDataObjectDeserializer eventDataObjectDeserializer = event.getDataObjectDeserializer();
+                                StripeObject stripeObject = null;
+                                if (eventDataObjectDeserializer.getObject().isPresent()) {
+                                    stripeObject = eventDataObjectDeserializer.getObject().get();
+                                } else {
+                                    return Mono.error(new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "eventDataObjectDeserializer was null"));
+                                }
+                                if (event.getType().equals("checkout.session.completed")) {
+                                    String orderId = ((Session) stripeObject).getMetadata().get("orderId");
+                                    Long totalAmount = ((Session) stripeObject).getAmountTotal();
+                                    return this.ordersRepository.findById(orderId)
+                                            .flatMap(order -> {
+                                                order.setStatus(Order.Status.PAID);
+                                                order.setTotalAmount(totalAmount);
+                                                return this.ordersRepository.save(order)
+                                                        .flatMap(savedOrder -> ServerResponse.status(HttpStatus.OK).build());
+                                            });
+                                }
+                                return ServerResponse.status(HttpStatus.OK).build();
+                            });
+                })
+                .onErrorMap(StripeException.class, e -> {
+                    return new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Stripe API Error" + e.getMessage());
+                });
     }
 
     public Mono<List<SessionCreateParams.LineItem>> createLineItems(Mono<Restaurant> restaurantMono, List<CartItem> cartItems) {
@@ -189,7 +232,7 @@ public class OrdersRoutesHandler extends BaseHandler {
                             });
                 })
                 .onErrorMap(StripeException.class, e -> {
-                    return new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Stripe API Error" + e.getMessage());
+                    return new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Stripe API Error");
                 });
     }
 
@@ -198,11 +241,4 @@ public class OrdersRoutesHandler extends BaseHandler {
         return jwtDecoder.decode(tokenValue)
                 .map(j -> j.getClaimAsString("sub"));
     }
-
-    private Mono<ServerResponse> createErrorResponse(Integer code, String message) {
-        Map<String, String> errorResponse = Map.of("message", message);
-        return ServerResponse.status(code).contentType(MediaType.APPLICATION_JSON).bodyValue(errorResponse);
-    }
-
-    ;
 }

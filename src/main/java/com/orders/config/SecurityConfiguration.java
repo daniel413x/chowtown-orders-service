@@ -25,9 +25,13 @@ public class SecurityConfiguration {
 
     @Bean
     public SecurityWebFilterChain springSecurityFilterChain(ServerHttpSecurity http) {
-        return http.authorizeExchange(exchanges -> exchanges
+        return http
+                .csrf(csrf -> csrf.disable())
+                .authorizeExchange(exchanges -> exchanges
                         .pathMatchers(HttpMethod.OPTIONS).permitAll()
-                        .anyExchange().authenticated()
+                        .pathMatchers(HttpMethod.POST, "/api/orders/stripe-checkout-webhook")
+                        .permitAll()
+                        .anyExchange().permitAll()
                 )
                 .oauth2ResourceServer((oauth2) -> oauth2.jwt(Customizer.withDefaults()))
                 .build();
