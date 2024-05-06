@@ -46,6 +46,4 @@ public class Order {
     public enum Status {
         PLACED, PAID, IN_PROGRESS, OUT_FOR_DELIVERY, DELIVERED
     }
-
-    ;
 }

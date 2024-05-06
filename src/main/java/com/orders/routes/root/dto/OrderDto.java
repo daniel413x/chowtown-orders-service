@@ -1,8 +1,10 @@
 package com.orders.routes.root.dto;
 
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.orders.model.CartItem;
 import com.orders.model.DeliveryDetails;
 import com.orders.model.Order;
+import com.orders.utils.LocalDateTimeSerializer;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -10,6 +12,7 @@ import lombok.Setter;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Getter
@@ -27,6 +30,7 @@ public class OrderDto {
         dto.setCartItems(order.getCartItems());
         dto.setTotalAmount(order.getTotalAmount());
         dto.setStatus(order.getStatus());
+        dto.setCreatedAt(order.getCreatedAt());
         return Flux.fromIterable(order.getCartItems())
                 .map(cartItem -> new CartItem(
                         cartItem.getId(),
@@ -52,5 +56,8 @@ public class OrderDto {
     
     private Long totalAmount;
 
-    private Order.Status status;
+    private Order.Status status;;
+
+    @JsonSerialize(using = LocalDateTimeSerializer.class)
+    private LocalDateTime createdAt;
 };
