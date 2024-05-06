@@ -1,12 +1,12 @@
-package com.orders.handlers;
+package com.orders.routes.stripe.handlers;
 
-import com.orders.dto.CheckoutSessionReq;
-import com.orders.dto.CheckoutSessionRes;
-import com.orders.dto.MenuItem;
-import com.orders.dto.Restaurant;
+import com.orders.routes.stripe.dto.CheckoutSessionReq;
+import com.orders.routes.stripe.dto.CheckoutSessionRes;
+import com.orders.routes.stripe.dto.MenuItem;
+import com.orders.routes.stripe.dto.Restaurant;
 import com.orders.model.CartItem;
 import com.orders.model.Order;
-import com.orders.repository.OrdersRepository;
+import com.orders.routes.stripe.repository.StripeOrdersRepository;
 import com.orders.utils.BaseHandler;
 import com.orders.utils.ValidationHandler;
 import com.stripe.StripeClient;
@@ -40,23 +40,21 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 @Component
-public class OrdersRoutesHandler extends BaseHandler {
+public class StripeRoutesHandler extends BaseHandler {
 
-    private OrdersRepository ordersRepository;
+    private StripeOrdersRepository stripeOrdersRepository;
     private StripeClient stripe;
     private ValidationHandler validationHandler;
-    private ReactiveJwtDecoder jwtDecoder;
 
     @Autowired
-    public OrdersRoutesHandler(OrdersRepository ordersRepository, ValidationHandler validationHandler, ReactiveJwtDecoder jwtDecoder) {
-        this.ordersRepository = ordersRepository;
+    public StripeRoutesHandler(StripeOrdersRepository stripeOrdersRepository, ValidationHandler validationHandler, ReactiveJwtDecoder jwtDecoder) {
+        this.stripeOrdersRepository = stripeOrdersRepository;
         this.stripe = new StripeClient(System.getenv("STRIPE_SK_TEST_KEY"));
         this.validationHandler = validationHandler;
-        this.jwtDecoder = jwtDecoder;
-        initializeWebClient(System.getenv("RESTAURANT_SVC_ADDRESS"));
+        initializeBaseHandler(System.getenv("RESTAURANT_SVC_ADDRESS"), jwtDecoder);
     }
 
-    public OrdersRoutesHandler() {
+    public StripeRoutesHandler() {
     }
 
     public Mono<ServerResponse> stripeCheckoutWebhook(ServerRequest req) {
@@ -82,11 +80,11 @@ public class OrdersRoutesHandler extends BaseHandler {
                                 if (event.getType().equals("checkout.session.completed")) {
                                     String orderId = ((Session) stripeObject).getMetadata().get("orderId");
                                     Long totalAmount = ((Session) stripeObject).getAmountTotal();
-                                    return this.ordersRepository.findById(orderId)
+                                    return this.stripeOrdersRepository.findById(orderId)
                                             .flatMap(order -> {
                                                 order.setStatus(Order.Status.PAID);
                                                 order.setTotalAmount(totalAmount);
-                                                return this.ordersRepository.save(order)
+                                                return this.stripeOrdersRepository.save(order)
                                                         .flatMap(savedOrder -> ServerResponse.status(HttpStatus.OK).build());
                                             });
                                 }
@@ -163,7 +161,7 @@ public class OrdersRoutesHandler extends BaseHandler {
                                             order.setDeliveryDetails(checkoutSessionReq.getDeliveryDetails());
                                             order.setCartItems(cartItems);
                                             order.setUserId(auth0Id);
-                                            return ordersRepository.save(order)
+                                            return stripeOrdersRepository.save(order)
                                                     .flatMap(orderFlat -> {
                                                         return this.createSession(
                                                                         lineItems,
@@ -234,11 +232,5 @@ public class OrdersRoutesHandler extends BaseHandler {
                 .onErrorMap(StripeException.class, e -> {
                     return new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Stripe API Error");
                 });
-    }
-
-    private Mono<String> getAuth0IdFromToken(String authorizationHeader) {
-        String tokenValue = authorizationHeader.replace("Bearer ", "");
-        return jwtDecoder.decode(tokenValue)
-                .map(j -> j.getClaimAsString("sub"));
     }
 }

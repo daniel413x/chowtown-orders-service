@@ -1,4 +1,4 @@
-package com.orders.dto;
+package com.orders.routes.stripe.dto;
 
 import com.orders.model.CartItem;
 import com.orders.model.DeliveryDetails;
@@ -16,8 +16,6 @@ import java.util.List;
 public class CheckoutSessionReq {
 
     private List<CartItem> cartItems;
-
-    private String userId;
 
     private String restaurantSlug;
 

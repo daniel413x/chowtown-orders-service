@@ -1,6 +1,6 @@
-package com.orders.router;
+package com.orders.routes.root.router;
 
-import com.orders.handlers.OrdersRoutesHandler;
+import com.orders.routes.root.handlers.OrdersRoutesHandler;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.web.reactive.function.server.RequestPredicates;
@@ -16,8 +16,7 @@ public class OrdersRouter {
         return RouterFunctions
                 .route()
                 .nest(RequestPredicates.path("/api/orders"), builder -> {
-                    builder.POST("/create-checkout-session", ordersRoutesHandler::createCheckoutSession);
-                    builder.POST("/stripe-checkout-webhook", ordersRoutesHandler::stripeCheckoutWebhook);
+                    builder.GET("/user", ordersRoutesHandler::getUserOrders);
                 })
                 .build();
     }

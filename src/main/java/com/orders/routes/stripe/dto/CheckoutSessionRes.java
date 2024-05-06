@@ -1,4 +1,4 @@
-package com.orders.dto;
+package com.orders.routes.stripe.dto;
 
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -9,10 +9,7 @@ import lombok.Setter;
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
-public class MenuItem {
-    private String id;
+public class CheckoutSessionRes {
 
-    private String name;
-
-    private Long price;
+    private String url;
 };

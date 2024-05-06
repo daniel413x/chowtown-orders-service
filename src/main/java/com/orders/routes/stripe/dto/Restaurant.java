@@ -1,4 +1,4 @@
-package com.orders.dto;
+package com.orders.routes.stripe.dto;
 
 import lombok.AllArgsConstructor;
 import lombok.Getter;
