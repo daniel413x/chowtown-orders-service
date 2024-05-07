@@ -28,6 +28,7 @@ public class OrderDto {
         dto.setRestaurantId(order.getRestaurantId());
         dto.setDeliveryDetails(order.getDeliveryDetails());
         dto.setCartItems(order.getCartItems());
+        dto.setDeliveryPrice(order.getDeliveryPrice());
         dto.setTotalAmount(order.getTotalAmount());
         dto.setStatus(order.getStatus());
         dto.setCreatedAt(order.getCreatedAt());
@@ -53,7 +54,9 @@ public class OrderDto {
     private DeliveryDetails deliveryDetails;
     
     private List<CartItem> cartItems;
-    
+
+    private Long deliveryPrice;
+
     private Long totalAmount;
 
     private Order.Status status;;

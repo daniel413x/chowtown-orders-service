@@ -160,6 +160,7 @@ public class StripeRoutesHandler extends BaseHandler {
                                             order.setStatus(Order.Status.PLACED);
                                             order.setDeliveryDetails(checkoutSessionReq.getDeliveryDetails());
                                             order.setCartItems(cartItems);
+                                            order.setDeliveryPrice(restaurantFlat.getDeliveryPrice());
                                             order.setUserId(auth0Id);
                                             return stripeOrdersRepository.save(order)
                                                     .flatMap(orderFlat -> {
@@ -185,7 +186,7 @@ public class StripeRoutesHandler extends BaseHandler {
     private Mono<Session> createSession(
             Mono<List<SessionCreateParams.LineItem>> lineItems,
             ObjectId orderId,
-            Integer deliveryPrice,
+            Long deliveryPrice,
             String restaurantId
     ) {
         return lineItems.flatMap(lineItemsFlat -> {

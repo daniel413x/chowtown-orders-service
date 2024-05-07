@@ -21,7 +21,7 @@ public class Restaurant {
 
     private String country;
 
-    private Integer deliveryPrice;
+    private Long deliveryPrice;
 
     private Integer estimatedDeliveryTime;
 

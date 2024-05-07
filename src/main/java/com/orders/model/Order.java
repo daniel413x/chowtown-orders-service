@@ -37,6 +37,9 @@ public class Order {
     @Field("totalAmount")
     private Long totalAmount;
 
+    @Field("deliveryPrice")
+    private Long deliveryPrice;
+
     @Field("Status")
     private Status status;
 

@@ -52,7 +52,7 @@ public class OrdersRoutesHandler extends BaseHandler {
         Map<String, String> queryParams = req.queryParams().toSingleValueMap();
         int page = Integer.parseInt(queryParams.getOrDefault("page", "1"));
         page = page - 1;
-        int size = Integer.parseInt(queryParams.getOrDefault("size", "10"));
+        int size = Integer.parseInt(queryParams.getOrDefault("size", "5"));
         return PageRequest.of(page, size, Sort.by(direction, sortBy));
     }
 }
