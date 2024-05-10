@@ -9,4 +9,5 @@ import reactor.core.publisher.Flux;
 @Repository
 public interface OrdersRepository extends ReactiveMongoRepository<Order, String> {
     Flux<Order> findAllByUserId(String userId, Pageable pageable);
+    Flux<Order> findAllByRestaurantId(String restaurantId, Pageable pageable);
 }

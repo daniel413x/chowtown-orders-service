@@ -51,7 +51,7 @@ public class StripeRoutesHandler extends BaseHandler {
         this.stripeOrdersRepository = stripeOrdersRepository;
         this.stripe = new StripeClient(System.getenv("STRIPE_SK_TEST_KEY"));
         this.validationHandler = validationHandler;
-        initializeBaseHandler(System.getenv("RESTAURANT_SVC_ADDRESS"), jwtDecoder);
+        initializeBaseHandler(System.getenv("RESTAURANT_SVC_ADDRESS") + "/customer", jwtDecoder);
     }
 
     public StripeRoutesHandler() {
